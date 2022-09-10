@@ -1,0 +1,51 @@
+version: "3.9"
+services:
+
+  ### Prefect Database
+  database:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=orion
+    expose:
+      - 5432
+    volumes: 
+      - db:/var/lib/postgresql/data
+ 
+  ### Prefect Orion API
+  orion:
+    image: prefecthq/prefect:2.3.1-python3.10
+    restart: always
+    volumes:
+      - prefect:/root/.prefect
+    entrypoint: ["prefect", "orion", "start"]
+    environment:
+      - PREFECT_ORION_UI_API_URL=http://localhost:4200/api
+      - PREFECT_ORION_API_HOST=0.0.0.0
+      - PREFECT_ORION_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres:postgres@database:5432/orion
+    ports:
+      - 4200:4200
+    depends_on:
+      - database
+
+  ## Prefect Agent
+  agent:
+    image: prefecthq/prefect:2.3.1-python3.10
+    restart: always
+    volumes:
+      - "./flows:/root/flows"
+    entrypoint: ["prefect", "agent", "start", "-q", "my_queue"]
+    environment:
+      - PREFECT_API_URL=http://orion:4200/api
+#       Use PREFECT_API_KEY if connecting the agent to Prefect Cloud
+#     - PREFECT_API_KEY=YOUR_API_KEY
+
+      
+volumes:
+  prefect:
+  db:
+networks:
+  default:
+    name: prefect-network
