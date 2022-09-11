@@ -11,6 +11,7 @@ deployment = Deployment.build_from_flow(
             'PREFECT_LOGGING_LEVEL': 'INFO'
         }
     },
+    path='/root',
     entrypoint='/root/flows/flow.py:greetings',
     work_queue_name='my_queue',
 )
